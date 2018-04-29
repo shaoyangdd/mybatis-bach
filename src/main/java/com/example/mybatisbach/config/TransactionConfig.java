@@ -1,9 +1,12 @@
 package com.example.mybatisbach.config;
 
+import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -24,9 +27,15 @@ public class TransactionConfig{
 
 
     @Bean
-    public DataSourceTransactionManager transactionManager(@Qualifier("mybatisMasterDataSource")DataSource dataSource) {
-        return new DataSourceTransactionManager(dataSource);
+    public SqlInterceptor sqlInterceptor() {
+        return new SqlInterceptor();
     }
+
+
+//    @Bean
+//    public DataSourceTransactionManager transactionManager(@Qualifier("mybatisMasterDataSource")DataSource dataSource) {
+//        return new DataSourceTransactionManager(dataSource);
+//    }
 
     @Bean(name = "mybatisMasterDataSource")
     @ConfigurationProperties(prefix = "spring.datasource")
@@ -41,6 +50,7 @@ public class TransactionConfig{
         bean.setDataSource(dataSource);
         bean.setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath*:mapping/*.xml"));
 
+        bean.setPlugins(new Interceptor[]{sqlInterceptor()});
         // 设置MyBatis分页插件
 //        PageInterceptor pageInterceptor = this.initPageInterceptor();
 //        bean.setPlugins(new Interceptor[]{pageInterceptor});
@@ -64,7 +74,7 @@ public class TransactionConfig{
 
     @Bean(name = "mybatisMasterSqlSessionTemplate")
     public SqlSessionTemplate mybatisMasterSqlSessionTemplate(@Qualifier("mybatisMasterSqlSessionFactory") SqlSessionFactory sqlSessionFactory) throws Exception {
-        return new SqlSessionTemplate(sqlSessionFactory);
+        return new SqlSessionTemplate(sqlSessionFactory, ExecutorType.BATCH);
     }
 
 //    public PageInterceptor initPageInterceptor(){
